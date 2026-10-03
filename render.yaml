@@ -9,6 +9,8 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 24
+      - key: HOST
+        value: 0.0.0.0
       - key: DAILY_CRON
         value: 'off'
       - key: APP_ID
