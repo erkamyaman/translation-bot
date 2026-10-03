@@ -1,44 +1,64 @@
 import { describe, expect, it } from 'vitest';
-import { groupFiles } from './classify.js';
-import { buildIssueBody } from './issue-body.js';
+import { splitSections, toChange } from './changes.js';
+import { buildIssueBody, MAX_BODY_LENGTH, MAX_FILES_PER_CHANGE } from './issue-body.js';
 
 const base = 'a'.repeat(40);
 const head = 'b'.repeat(40);
+const input = (changes: ReturnType<typeof toChange>[]) => ({
+  upstreamRepo: 'angular/angular',
+  base,
+  head,
+  since: '2026-10-03T06:00:00.000Z',
+  windowHours: 24,
+  sections: splitSections(changes, ['adev/src/content/']),
+});
 
 describe('buildIssueBody', () => {
-  const groups = groupFiles(
-    [
-      { filename: 'adev/src/content/guide/signals.md', status: 'modified' },
-      { filename: 'adev/src/content/guide/new.md', status: 'added' },
-      { filename: 'adev/src/app/home.ts', status: 'renamed', previous_filename: 'adev/src/app/old.ts' },
-    ],
-    ['adev/'],
-    ['adev/src/content/'],
-  );
-  const body = buildIssueBody({
-    upstreamRepo: 'angular/angular',
-    base,
-    head,
-    since: '2026-10-03T06:00:00.000Z',
-    windowHours: 24,
-    groups,
-  });
+  const changes = [
+    toChange('1'.repeat(40), 'docs: guide update (#10)', [{ filename: 'adev/src/content/guide/a.md', status: 'modified' }]),
+    toChange('2'.repeat(40), 'fix(docs-infra): card titles (#11)', [{ filename: 'adev/src/app/card.ts', status: 'modified' }]),
+  ];
+  const body = buildIssueBody(input(changes));
 
-  it('summarises the window and lists content and docs infra', () => {
-    expect(body).toContain('3 upstream files changed in the last 24 hours');
-    expect(body).toContain('## Docs (2)');
+  it('lists changes under Docs and Docs infra with PR and diff links', () => {
+    expect(body).toContain('2 upstream changes touched tracked files in the last 24 hours');
+    expect(body).toContain('## Docs (1)');
     expect(body).toContain('## Docs infra (1)');
-    expect(body).toContain('### adev/src/app (1)');
+    expect(body).toContain('[docs: guide update](https://redirect.github.com/angular/angular/pull/10)');
+    expect(body).toContain('([diff](https://redirect.github.com/angular/angular/commit/');
   });
 
-  it('links each file at the head commit and notes renames', () => {
-    expect(body).toContain(`https://github.com/angular/angular/blob/${head}/adev/src/content/guide/new.md`);
-    expect(body).toContain('(was `adev/src/app/old.ts`)');
+  it('never mentions a user or an issue number of this repo', () => {
+    expect(body).not.toMatch(/(^|\s)@\w/);
+    expect(body).not.toMatch(/(^|\s)#\d/);
   });
 
-  it('links the diff and mentions the commands', () => {
-    expect(body).toContain(`https://github.com/angular/angular/compare/${base}...${head}`);
+  it('writes no link to github.com pull requests, issues or commits', () => {
+    expect(body).not.toMatch(/https:\/\/github\.com\/[^/]+\/[^/]+\/(pull|issues|commit|compare)/);
+  });
+
+  it('links the full diff and mentions the commands', () => {
+    expect(body).toContain(`https://redirect.github.com/angular/angular/compare/${base}...${head}`);
     expect(body).toContain('`/claim`');
-    expect(body).toContain('`/unclaim`');
+  });
+
+  it('caps the files shown per change', () => {
+    const many = toChange(
+      '3'.repeat(40),
+      'docs: big (#12)',
+      Array.from({ length: MAX_FILES_PER_CHANGE + 3 }, (_, i) => ({ filename: `adev/src/content/f${i}.md`, status: 'added' })),
+    );
+    expect(buildIssueBody(input([many]))).toContain('and 3 more files');
+  });
+
+  it('stays under the size limit and says what it left out', () => {
+    const lots = Array.from({ length: 800 }, (_, i) =>
+      toChange(String(i).padStart(40, '0'), `docs: change number ${i} (#${i + 1})`, [
+        { filename: `adev/src/content/guide/page-${i}.md`, status: 'modified' },
+      ]),
+    );
+    const huge = buildIssueBody(input(lots));
+    expect(huge.length).toBeLessThanOrEqual(MAX_BODY_LENGTH + 500);
+    expect(huge).toMatch(/\d+ more changes did not fit/);
   });
 });

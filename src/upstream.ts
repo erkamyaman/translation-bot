@@ -1,16 +1,19 @@
 import type { ProbotOctokit } from 'probot';
-import { type ChangedFile } from './classify.js';
+import { underAny, type ChangedFile } from './classify.js';
+import { toChange, type Change } from './changes.js';
 import { sinceIso } from './issue-meta.js';
 import { type BotConfig } from './config.js';
 
 type Octokit = InstanceType<typeof ProbotOctokit>;
 
 export interface UpstreamChanges {
-  files: ChangedFile[];
+  changes: Change[];
   base: string;
   head: string;
   since: string;
 }
+
+const CONCURRENCY = 5;
 
 export async function collectChanges(octokit: Octokit, config: BotConfig, now: Date): Promise<UpstreamChanges | null> {
   const [owner, repo] = config.upstream.split('/') as [string, string];
@@ -27,17 +30,22 @@ export async function collectChanges(octokit: Octokit, config: BotConfig, now: D
   const oldest = commits[commits.length - 1];
   if (!newest || !oldest) return null;
 
-  const head = newest.sha;
-  const base = oldest.parents[0]?.sha ?? oldest.sha;
-  const files: ChangedFile[] = [];
-  const pages = octokit.paginate.iterator(octokit.rest.repos.compareCommitsWithBasehead, {
-    owner,
-    repo,
-    basehead: `${base}...${head}`,
-    per_page: 100,
-  });
-  for await (const page of pages) {
-    files.push(...((page.data as { files?: ChangedFile[] }).files ?? []));
+  const changes: Change[] = [];
+  for (let start = 0; start < commits.length; start += CONCURRENCY) {
+    const batch = commits.slice(start, start + CONCURRENCY);
+    const details = await Promise.all(
+      batch.map((commit) => octokit.rest.repos.getCommit({ owner, repo, ref: commit.sha })),
+    );
+    for (const { data } of details) {
+      const files = ((data.files ?? []) as ChangedFile[]).filter((file) => underAny(file.filename, config.paths));
+      if (files.length) changes.push(toChange(data.sha, data.commit.message, files));
+    }
   }
-  return { files, base, head, since };
+
+  return {
+    changes,
+    base: oldest.parents[0]?.sha ?? oldest.sha,
+    head: newest.sha,
+    since,
+  };
 }

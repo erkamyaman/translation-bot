@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { groupFiles } from './classify.js';
 import { issueTitle, labelsFor, sinceIso } from './issue-meta.js';
 
 describe('issue metadata', () => {
@@ -14,16 +13,8 @@ describe('issue metadata', () => {
   });
 
   it('labels by what changed', () => {
-    const both = groupFiles(
-      [
-        { filename: 'adev/src/content/a.md', status: 'modified' },
-        { filename: 'adev/src/app/b.ts', status: 'modified' },
-      ],
-      ['adev/'],
-      ['adev/src/content/'],
-    );
-    expect(labelsFor(both, 'translation-sync')).toEqual(['translation-sync', 'docs', 'docs-infra']);
-    const onlyContent = groupFiles([{ filename: 'adev/src/content/a.md', status: 'added' }], ['adev/'], ['adev/src/content/']);
-    expect(labelsFor(onlyContent, 'translation-sync')).toEqual(['translation-sync', 'docs']);
+    expect(labelsFor(true, true, 'translation-sync')).toEqual(['translation-sync', 'docs', 'docs-infra']);
+    expect(labelsFor(true, false, 'translation-sync')).toEqual(['translation-sync', 'docs']);
+    expect(labelsFor(false, true, 'translation-sync')).toEqual(['translation-sync', 'docs-infra']);
   });
 });

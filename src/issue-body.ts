@@ -1,4 +1,7 @@
-import { countFiles, type ChangedFile, type Groups } from './classify.js';
+import { changeUrl, diffUrl, neutralize, type Change, type Sections } from './changes.js';
+
+export const MAX_FILES_PER_CHANGE = 8;
+export const MAX_BODY_LENGTH = 60_000;
 
 export interface ReportInput {
   upstreamRepo: string;
@@ -6,45 +9,49 @@ export interface ReportInput {
   head: string;
   since: string;
   windowHours: number;
-  groups: Groups;
+  sections: Sections;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  added: 'new',
-  removed: 'deleted',
-  renamed: 'renamed',
-  modified: 'changed',
-};
-
-function line(input: ReportInput, file: ChangedFile): string {
-  const status = STATUS_LABEL[file.status] ?? file.status;
-  const url = `https://github.com/${input.upstreamRepo}/blob/${input.head}/${file.filename}`;
-  const renamed = file.previous_filename ? ` (was \`${file.previous_filename}\`)` : '';
-  return `- [ ] [\`${file.filename}\`](${url}) ${status}${renamed}`;
+function item(upstream: string, change: Change): string {
+  const lines = [`- [ ] [${neutralize(change.title)}](${changeUrl(upstream, change)}) \`${change.sha.slice(0, 7)}\``];
+  for (const file of change.files.slice(0, MAX_FILES_PER_CHANGE)) {
+    lines.push(`  - \`${file.filename}\` ([diff](${diffUrl(upstream, change.sha, file.filename)}))`);
+  }
+  const hidden = change.files.length - MAX_FILES_PER_CHANGE;
+  if (hidden > 0) lines.push(`  - and ${hidden} more files`);
+  return lines.join('\n');
 }
 
 export function buildIssueBody(input: ReportInput): string {
-  const { groups } = input;
-  const total = countFiles(groups);
-  const compare = `https://github.com/${input.upstreamRepo}/compare/${input.base}...${input.head}`;
-  const out: string[] = [
-    `${total} upstream files changed in the last ${input.windowHours} hours (since ${input.since}). [Full diff](${compare}).`,
-  ];
+  const { upstreamRepo, sections } = input;
+  const compare = `https://redirect.github.com/${upstreamRepo}/compare/${input.base}...${input.head}`;
+  const footer = ['', '---', 'Comment `/claim` to take this issue or `/unclaim` to give it back.'].join('\n');
+  const headerCount = new Set([...sections.docs, ...sections.docsInfra].map((change) => change.sha)).size;
+  const header = `${headerCount} upstream changes touched tracked files in the last ${input.windowHours} hours (since ${input.since}). [Full diff](${compare}).`;
 
-  if (groups.content.length) {
-    out.push('', `## Docs (${groups.content.length})`, '', ...groups.content.map((file) => line(input, file)));
-  }
-
-  const areas = [...groups.infra.keys()].sort();
-  if (areas.length) {
-    const infraTotal = areas.reduce((sum, area) => sum + (groups.infra.get(area)?.length ?? 0), 0);
-    out.push('', `## Docs infra (${infraTotal})`);
-    for (const area of areas) {
-      const files = groups.infra.get(area) ?? [];
-      out.push('', `### ${area} (${files.length})`, '', ...files.map((file) => line(input, file)));
+  const blocks: string[] = [];
+  let length = header.length + footer.length;
+  let omitted = 0;
+  const addSection = (title: string, changes: Change[]): void => {
+    if (!changes.length) return;
+    const heading = `## ${title} (${changes.length})`;
+    const items: string[] = [];
+    for (const change of changes) {
+      const text = item(upstreamRepo, change);
+      if (length + heading.length + text.length + 200 > MAX_BODY_LENGTH) {
+        omitted += 1;
+        continue;
+      }
+      length += text.length + 2;
+      items.push(text);
     }
-  }
+    length += heading.length + 4;
+    blocks.push([heading, '', ...items].join('\n'));
+  };
+  addSection('Docs', sections.docs);
+  addSection('Docs infra', sections.docsInfra);
 
-  out.push('', '---', 'Comment `/claim` to take this issue or `/unclaim` to give it back.');
-  return out.join('\n');
+  const parts = [header, ...blocks];
+  if (omitted) parts.push(`${omitted} more changes did not fit. See the [full diff](${compare}).`);
+  return parts.join('\n\n') + '\n' + footer;
 }

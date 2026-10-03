@@ -1,6 +1,6 @@
 import type { Probot, ProbotOctokit } from 'probot';
 import cron from 'node-cron';
-import { groupFiles } from './classify.js';
+import { splitSections } from './changes.js';
 import { buildIssueBody } from './issue-body.js';
 import { issueTitle, labelsFor } from './issue-meta.js';
 import { loadConfig } from './repo-config.js';
@@ -15,8 +15,8 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
   const changes = await collectChanges(octokit, config, now);
   if (!changes) return 'no upstream commits in the window';
 
-  const groups = groupFiles(changes.files, config.paths, config.contentPaths);
-  if (!groups.content.length && !groups.infra.size) return 'no tracked files changed';
+  const sections = splitSections(changes.changes, config.contentPaths);
+  if (!sections.docs.length && !sections.docsInfra.length) return 'no tracked files changed';
 
   const title = issueTitle(config.titlePrefix, now);
   const body = buildIssueBody({
@@ -25,7 +25,7 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
     head: changes.head,
     since: changes.since,
     windowHours: config.windowHours,
-    groups,
+    sections,
   });
 
   const issues = await octokit.paginate(octokit.rest.issues.listForRepo, {
@@ -46,7 +46,7 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
     repo,
     title,
     body,
-    labels: labelsFor(groups, config.label),
+    labels: labelsFor(sections.docs.length > 0, sections.docsInfra.length > 0, config.label),
     assignees: config.assignees.length ? config.assignees : [owner],
   });
   return `opened #${created.data.number}`;

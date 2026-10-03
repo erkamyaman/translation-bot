@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countFiles, groupFiles, splitList, type ChangedFile } from './classify.js';
-
-const file = (filename: string, status = 'modified'): ChangedFile => ({ filename, status });
+import { splitList, underAny } from './classify.js';
 
 describe('splitList', () => {
   it('trims and drops empty items', () => {
@@ -9,32 +7,9 @@ describe('splitList', () => {
   });
 });
 
-describe('groupFiles', () => {
-  const paths = ['adev/'];
-  const contentPaths = ['adev/src/content/'];
-
-  it('splits content from docs infra and groups infra by area', () => {
-    const groups = groupFiles(
-      [
-        file('adev/src/content/guide/signals.md'),
-        file('adev/src/content/aria/aria-tree.json'),
-        file('adev/src/app/core/app.ts'),
-        file('adev/src/app/features/home.html'),
-        file('adev/shared-docs/pipeline/shared/marked.mts'),
-      ],
-      paths,
-      contentPaths,
-    );
-    expect(groups.content.map((f) => f.filename)).toEqual([
-      'adev/src/content/aria/aria-tree.json',
-      'adev/src/content/guide/signals.md',
-    ]);
-    expect([...groups.infra.keys()].sort()).toEqual(['adev/shared-docs/pipeline', 'adev/src/app']);
-    expect(groups.infra.get('adev/src/app')?.length).toBe(2);
-  });
-
-  it('ignores files outside the tracked paths', () => {
-    const groups = groupFiles([file('packages/core/src/x.ts'), file('adev/src/content/a.md')], paths, contentPaths);
-    expect(countFiles(groups)).toBe(1);
+describe('underAny', () => {
+  it('matches a path against any prefix', () => {
+    expect(underAny('adev/src/content/a.md', ['adev/'])).toBe(true);
+    expect(underAny('packages/core/a.ts', ['adev/', 'docs/'])).toBe(false);
   });
 });
