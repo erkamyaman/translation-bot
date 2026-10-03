@@ -33,9 +33,10 @@ export function buildIssueBody(input: ReportInput): string {
   const checked = input.checkedAt ? [checkedAtLine(input.checkedAt)] : [];
   const footer = ['', '---', ...checked].join('\n');
   const headerCount = new Set([...sections.docs, ...sections.docsInfra].map((change) => change.sha)).size;
+  const noun = headerCount === 1 ? 'change' : 'changes';
   const header = update
-    ? `## New changes from Angular repo\n\n${headerCount} new upstream changes since ${turkeyTime(input.since)}. [Full diff](${compare}).`
-    : `${headerCount} upstream changes touched tracked files in the last ${input.windowHours} hours (since ${input.since}). [Full diff](${compare}).`;
+    ? `## New changes from the Angular Repository\n\n${headerCount} new ${noun} since ${turkeyTime(input.since)}. [See all changes](${compare}).`
+    : `${headerCount} ${noun} in the last ${input.windowHours} hours (since ${turkeyTime(input.since)}). [See all changes](${compare}).`;
 
   const blocks: string[] = [];
   let length = header.length + footer.length;
@@ -60,6 +61,6 @@ export function buildIssueBody(input: ReportInput): string {
   addSection('Docs infra', sections.docsInfra);
 
   const parts = [header, ...blocks];
-  if (omitted) parts.push(`${omitted} more changes did not fit. See the [full diff](${compare}).`);
+  if (omitted) parts.push(`${omitted} more changes did not fit. See [all changes](${compare}).`);
   return parts.join('\n\n') + '\n' + footer;
 }

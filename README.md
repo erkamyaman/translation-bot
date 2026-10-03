@@ -4,7 +4,7 @@ GitHub App for translation forks. Once a day it reads the last 24 hours of commi
 
 ## What it does
 
-- Opens one issue per day, titled `Upstream changes to translate (YYYY-MM-DD)`. Re-runs on the same day update that issue.
+- Opens one issue titled `New changes from the Angular Repository`. While it is open, each run adds a comment with what is new since the last check, or says there is nothing new.
 - Splits the checklist into **Docs** (pages to translate) and **Docs infra** (app, shared-docs, pipeline), and labels the issue `translation-sync`, `docs` and `docs-infra` as they apply.
 - Assigns the issue to the repo owner, or to the `assignees` you configure.
 
@@ -22,7 +22,7 @@ contentPaths: [adev/src/content/]
 windowHours: 24
 assignees: []
 label: translation-sync
-titlePrefix: Upstream changes to translate
+title: New changes from the Angular Repository
 ```
 
 ## Run

@@ -6,7 +6,7 @@ export interface BotConfig {
   windowHours: number;
   assignees: string[];
   label: string;
-  titlePrefix: string;
+  title: string;
 }
 
 export const DEFAULT_CONFIG: BotConfig = {
@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG: BotConfig = {
   windowHours: 24,
   assignees: [],
   label: 'translation-sync',
-  titlePrefix: 'Upstream changes to translate',
+  title: 'New changes from the Angular Repository',
 };
 
 function text(value: unknown, fallback: string): string {
@@ -45,6 +45,6 @@ export function parseConfig(raw: unknown): BotConfig {
     windowHours: positiveInteger(source['windowHours'], DEFAULT_CONFIG.windowHours),
     assignees: list(source['assignees'], DEFAULT_CONFIG.assignees),
     label: text(source['label'], DEFAULT_CONFIG.label),
-    titlePrefix: text(source['titlePrefix'], DEFAULT_CONFIG.titlePrefix),
+    title: text(source['title'], DEFAULT_CONFIG.title),
   };
 }

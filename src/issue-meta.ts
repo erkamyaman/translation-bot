@@ -2,10 +2,6 @@ export function sinceIso(now: Date, windowHours: number): string {
   return new Date(now.getTime() - windowHours * 3_600_000).toISOString();
 }
 
-export function issueTitle(prefix: string, now: Date): string {
-  return `${prefix} (${now.toISOString().slice(0, 10)})`;
-}
-
 export function labelsFor(hasDocs: boolean, hasDocsInfra: boolean, baseLabel: string): string[] {
   const labels = [baseLabel];
   if (hasDocs) labels.push('docs');
@@ -45,7 +41,7 @@ export function turkeyDate(iso: string): string {
 }
 
 export function turkeyTime(iso: string): string {
-  return `${turkeyDate(iso)} Turkey time`;
+  return `${turkeyDate(iso)} (İstanbul, GMT+3)`;
 }
 
 export function checkedAtLine(iso: string): string {
@@ -56,5 +52,5 @@ export function nothingNewComment(since: string, hasLastRun: boolean, windowHour
   const detail = hasLastRun
     ? `No changes since the last check (${turkeyTime(since)}).`
     : `No changes in the last ${windowHours} hours (since ${turkeyTime(since)}).`;
-  return `## New changes from Angular repo\n\n${detail}\n\n---\n${checkedAtLine(checkedAt)}`;
+  return `## New changes from the Angular Repository\n\n${detail}\n\n---\n${checkedAtLine(checkedAt)}`;
 }

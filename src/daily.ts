@@ -2,7 +2,7 @@ import type { Probot, ProbotOctokit } from 'probot';
 import cron from 'node-cron';
 import { splitSections } from './changes.js';
 import { buildIssueBody } from './issue-body.js';
-import { issueTitle, labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
+import { labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
 import { loadConfig } from './repo-config.js';
 import { collectChanges } from './upstream.js';
 
@@ -73,7 +73,7 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
   const created = await octokit.rest.issues.create({
     owner,
     repo,
-    title: issueTitle(config.titlePrefix, now),
+    title: config.title,
     body: withLastRun(buildIssueBody(report), now),
     labels: labelsFor(sections.docs.length > 0, sections.docsInfra.length > 0, config.label),
     assignees: config.assignees.length ? config.assignees : [owner],

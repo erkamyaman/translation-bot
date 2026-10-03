@@ -21,7 +21,7 @@ describe('buildIssueBody', () => {
   const body = buildIssueBody(input(changes));
 
   it('lists changes under Docs and Docs infra with PR and diff links', () => {
-    expect(body).toContain('2 upstream changes touched tracked files in the last 24 hours');
+    expect(body).toContain('2 changes in the last 24 hours (since 3 Oct 2026, 09:00 (İstanbul, GMT+3))');
     expect(body).toContain('## Docs (1)');
     expect(body).toContain('## Docs infra (1)');
     expect(body).toContain('[docs: guide update](https://redirect.github.com/angular/angular/pull/10)');
@@ -72,12 +72,12 @@ describe('update comment', () => {
   });
 
   it('says what is new', () => {
-    expect(comment).toContain('## New changes from Angular repo');
-    expect(comment).toContain('new upstream changes since 3 Oct 2026, 09:00 Turkey time');
+    expect(comment).toContain('## New changes from the Angular Repository');
+    expect(comment).toContain('new change since 3 Oct 2026, 09:00 (İstanbul, GMT+3)');
   });
 
   it('dates each change and the check', () => {
     expect(comment).toContain('· 3 Oct 2026, 20:35');
-    expect(comment).toContain('Checked at 4 Oct 2026, 00:24 Turkey time.');
+    expect(comment).toContain('Checked at 4 Oct 2026, 00:24 (İstanbul, GMT+3).');
   });
 });

@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { issueTitle, labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
+import { labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
 
 describe('issue metadata', () => {
   const now = new Date('2026-10-04T06:00:00Z');
 
   it('computes the start of the window', () => {
     expect(sinceIso(now, 24)).toBe('2026-10-03T06:00:00.000Z');
-  });
-
-  it('puts the UTC date in the title', () => {
-    expect(issueTitle('Upstream changes', now)).toBe('Upstream changes (2026-10-04)');
   });
 
   it('labels by what changed', () => {
@@ -44,7 +40,7 @@ describe('nothing new comment', () => {
 
   it('names the last check and when it ran', () => {
     expect(nothingNewComment('2026-10-03T06:00:00.000Z', true, 24, checkedAt)).toBe(
-      '## New changes from Angular repo\n\nNo changes since the last check (3 Oct 2026, 09:00 Turkey time).\n\n---\nChecked at 4 Oct 2026, 00:24 Turkey time.',
+      '## New changes from the Angular Repository\n\nNo changes since the last check (3 Oct 2026, 09:00 (İstanbul, GMT+3)).\n\n---\nChecked at 4 Oct 2026, 00:24 (İstanbul, GMT+3).',
     );
   });
 
