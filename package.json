@@ -1,0 +1,23 @@
+{
+  "name": "translation-bot",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "probot run ./dist/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "node-cron": "^4.2.1",
+    "probot": "^14.3.2",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "smee-client": "^4.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}
