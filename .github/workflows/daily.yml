@@ -1,7 +1,7 @@
 name: Daily report
 on:
   schedule:
-    # 21:24 UTC is 00:24 in Turkey (UTC+3). 00:24 mirrored is 42:00, like Angular's port 4200 :).
+    # 21:24 UTC is 00:24 in Turkey (UTC+3). 00:24 mirrored is 42:00, like Angular's port 4200 :)
     - cron: '24 21 * * *'
   workflow_dispatch:
 permissions: {}
