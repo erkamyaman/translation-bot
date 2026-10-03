@@ -6,6 +6,12 @@ describe('tokenMatches', () => {
     expect(tokenMatches('Bearer s3cret', 's3cret')).toBe(true);
   });
 
+  it('ignores stray whitespace and newlines on either side', () => {
+    expect(tokenMatches('Bearer s3cret\n', 's3cret')).toBe(true);
+    expect(tokenMatches('Bearer s3cret', 's3cret\n')).toBe(true);
+    expect(tokenMatches('Bearer s3cret ', ' s3cret\r\n')).toBe(true);
+  });
+
   it('rejects a wrong, missing or malformed token', () => {
     expect(tokenMatches('Bearer nope', 's3cret')).toBe(false);
     expect(tokenMatches('Bearer s3cret!', 's3cret')).toBe(false);

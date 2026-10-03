@@ -6,9 +6,10 @@ import { runDaily } from './daily.js';
 export const DAILY_PATH = '/translation-bot/daily';
 
 export function tokenMatches(header: string | undefined, token: string | undefined): boolean {
-  if (!token || !header?.startsWith('Bearer ')) return false;
-  const given = Buffer.from(header.slice('Bearer '.length));
-  const expected = Buffer.from(token);
+  const expectedToken = token?.trim();
+  if (!expectedToken || !header?.startsWith('Bearer ')) return false;
+  const given = Buffer.from(header.slice('Bearer '.length).trim());
+  const expected = Buffer.from(expectedToken);
   return given.length === expected.length && timingSafeEqual(given, expected);
 }
 
