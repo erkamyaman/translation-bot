@@ -1,5 +1,5 @@
 import { checkedAtLine, turkeyDate, turkeyTime } from './issue-meta.js';
-import { changeUrl, diffUrl, neutralize, type Change, type Sections } from './changes.js';
+import { commitUrl, diffUrl, neutralize, prUrl, type Change, type Sections } from './changes.js';
 
 export const MAX_FILES_PER_CHANGE = 8;
 export const MAX_BODY_LENGTH = 60_000;
@@ -17,7 +17,8 @@ export interface ReportInput {
 
 function item(upstream: string, change: Change): string {
   const when = change.date ? ` · ${turkeyDate(change.date)}` : '';
-  const lines = [`- [ ] [${neutralize(change.title)}](${changeUrl(upstream, change)}) \`${change.sha.slice(0, 7)}\`${when}`];
+  const pr = change.prNumber ? ` · [PR](${prUrl(upstream, change.prNumber)})` : '';
+  const lines = [`- [ ] ${neutralize(change.title)}${pr} · [commit](${commitUrl(upstream, change.sha)})${when}`];
   for (const file of change.files.slice(0, MAX_FILES_PER_CHANGE)) {
     lines.push(`  - \`${file.filename}\` ([diff](${diffUrl(upstream, change.sha, file.filename)}))`);
   }
@@ -36,7 +37,7 @@ export function buildIssueBody(input: ReportInput): string {
   const noun = headerCount === 1 ? 'change' : 'changes';
   const header = update
     ? `## New changes from the Angular Repository\n\n${headerCount} new ${noun} since ${turkeyTime(input.since)}. [See all changes](${compare}).`
-    : `${headerCount} ${noun} in the last ${input.windowHours} hours (since ${turkeyTime(input.since)}). [See all changes](${compare}).`;
+    : `${headerCount} ${noun} in the last ${input.windowHours} hours, since ${turkeyTime(input.since)}. [See all changes](${compare}).`;
 
   const blocks: string[] = [];
   let length = header.length + footer.length;

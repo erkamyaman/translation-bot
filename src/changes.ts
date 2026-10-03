@@ -50,10 +50,12 @@ export function neutralize(text: string): string {
     .replace(/[[\]]/g, '\\$&');
 }
 
-export function changeUrl(upstream: string, change: Change): string {
-  return change.prNumber
-    ? `https://redirect.github.com/${upstream}/pull/${change.prNumber}`
-    : `https://redirect.github.com/${upstream}/commit/${change.sha}`;
+export function prUrl(upstream: string, prNumber: number): string {
+  return `https://redirect.github.com/${upstream}/pull/${prNumber}`;
+}
+
+export function commitUrl(upstream: string, sha: string): string {
+  return `https://redirect.github.com/${upstream}/commit/${sha}`;
 }
 
 export function diffUrl(upstream: string, sha: string, filename: string): string {

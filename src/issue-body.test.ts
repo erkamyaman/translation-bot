@@ -21,10 +21,10 @@ describe('buildIssueBody', () => {
   const body = buildIssueBody(input(changes));
 
   it('lists changes under Docs and Docs infra with PR and diff links', () => {
-    expect(body).toContain('2 changes in the last 24 hours (since 3 Oct 2026, 09:00 (İstanbul, GMT+3))');
+    expect(body).toContain('2 changes in the last 24 hours, since 3 Oct 2026, 09:00 (İstanbul, GMT+3)');
     expect(body).toContain('## Docs (1)');
     expect(body).toContain('## Docs infra (1)');
-    expect(body).toContain('[docs: guide update](https://redirect.github.com/angular/angular/pull/10)');
+    expect(body).toContain('docs: guide update · [PR](https://redirect.github.com/angular/angular/pull/10) · [commit](');
     expect(body).toContain('([diff](https://redirect.github.com/angular/angular/commit/');
   });
 

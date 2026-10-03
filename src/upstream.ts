@@ -38,13 +38,29 @@ export async function collectChanges(
   const changes: Change[] = [];
   for (let start = 0; start < commits.length; start += CONCURRENCY) {
     const batch = commits.slice(start, start + CONCURRENCY);
-    const details = await Promise.all(
-      batch.map((commit) => octokit.rest.repos.getCommit({ owner, repo, ref: commit.sha })),
+    const found = await Promise.all(
+      batch.map(async (commit) => {
+        const { data } = await octokit.rest.repos.getCommit({ owner, repo, ref: commit.sha });
+        const files = ((data.files ?? []) as ChangedFile[]).filter((file) => underAny(file.filename, config.paths));
+        if (!files.length) return null;
+        const change = toChange(
+          data.sha,
+          data.commit.message,
+          files,
+          data.commit.committer?.date ?? data.commit.author?.date ?? '',
+        );
+        if (change.prNumber === null) {
+          const pulls = await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+            owner,
+            repo,
+            commit_sha: data.sha,
+          });
+          change.prNumber = pulls.data[0]?.number ?? null;
+        }
+        return change;
+      }),
     );
-    for (const { data } of details) {
-      const files = ((data.files ?? []) as ChangedFile[]).filter((file) => underAny(file.filename, config.paths));
-      if (files.length) changes.push(toChange(data.sha, data.commit.message, files, data.commit.committer?.date ?? data.commit.author?.date ?? ''));
-    }
+    for (const change of found) if (change) changes.push(change);
   }
 
   return {

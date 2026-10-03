@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changeUrl, diffUrl, neutralize, splitSections, toChange } from './changes.js';
+import { commitUrl, diffUrl, neutralize, prUrl, splitSections, toChange } from './changes.js';
 
 describe('toChange', () => {
   it('reads the PR number and strips it from the title', () => {
@@ -42,11 +42,12 @@ describe('mention safety', () => {
     expect(text).toContain('\\[x\\]');
   });
 
-  it('links PRs through redirect.github.com so Angular PRs get no back-link', () => {
-    const withPr = toChange('c'.repeat(40), 'docs: x (#12)', []);
-    expect(changeUrl('angular/angular', withPr)).toBe('https://redirect.github.com/angular/angular/pull/12');
-    const noPr = toChange('d'.repeat(40), 'docs: y', []);
-    expect(changeUrl('angular/angular', noPr)).toBe(`https://redirect.github.com/angular/angular/commit/${'d'.repeat(40)}`);
+  it('links PRs and commits through redirect.github.com so Angular gets no back-link', () => {
+    expect(toChange('c'.repeat(40), 'docs: x (#12)', []).prNumber).toBe(12);
+    expect(prUrl('angular/angular', 12)).toBe('https://redirect.github.com/angular/angular/pull/12');
+    expect(commitUrl('angular/angular', 'd'.repeat(40))).toBe(
+      `https://redirect.github.com/angular/angular/commit/${'d'.repeat(40)}`,
+    );
   });
 
   it('builds a stable per-file diff anchor', () => {
