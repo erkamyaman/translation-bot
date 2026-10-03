@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
+import { labelsFor, nothingNewComment, nothingNewIssueBody, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
 
 describe('issue metadata', () => {
   const now = new Date('2026-10-04T06:00:00Z');
@@ -46,5 +46,14 @@ describe('nothing new comment', () => {
 
   it('names the window when there is no earlier check', () => {
     expect(nothingNewComment('2026-10-03T06:00:00.000Z', false, 24, checkedAt)).toContain('No changes in the last 24 hours');
+  });
+});
+
+describe('nothing new issue body', () => {
+  it('explains why the issue is empty and when it was checked', () => {
+    const body = nothingNewIssueBody('2026-10-03T06:00:00.000Z', 24, '2026-10-03T21:24:00.000Z');
+    expect(body).toContain('No changes in the last 24 hours, since 3 Oct 2026, 09:00 (İstanbul, GMT+3).');
+    expect(body).toContain('nothing to translate yet');
+    expect(body).toContain('Checked at 4 Oct 2026, 00:24 (İstanbul, GMT+3).');
   });
 });

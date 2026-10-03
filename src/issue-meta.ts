@@ -48,9 +48,21 @@ export function checkedAtLine(iso: string): string {
   return `Checked at ${turkeyTime(iso)}.`;
 }
 
-export function nothingNewComment(since: string, hasLastRun: boolean, windowHours: number, checkedAt: string): string {
-  const detail = hasLastRun
+function nothingNewDetail(since: string, hasLastRun: boolean, windowHours: number): string {
+  return hasLastRun
     ? `No changes since the last check (${turkeyTime(since)}).`
-    : `No changes in the last ${windowHours} hours (since ${turkeyTime(since)}).`;
-  return `## New changes from the Angular Repository\n\n${detail}\n\n---\n${checkedAtLine(checkedAt)}`;
+    : `No changes in the last ${windowHours} hours, since ${turkeyTime(since)}.`;
+}
+
+export function nothingNewComment(since: string, hasLastRun: boolean, windowHours: number, checkedAt: string): string {
+  return `## New changes from the Angular Repository\n\n${nothingNewDetail(since, hasLastRun, windowHours)}\n\n---\n${checkedAtLine(checkedAt)}`;
+}
+
+export function nothingNewIssueBody(since: string, windowHours: number, checkedAt: string): string {
+  return [
+    nothingNewDetail(since, false, windowHours),
+    'The Angular repository had no commits that touch the tracked docs files in this time, so there is nothing to translate yet.',
+    'This issue stays open. Each check adds a comment with what is new, or says that nothing changed.',
+    `---\n${checkedAtLine(checkedAt)}`,
+  ].join('\n\n');
 }

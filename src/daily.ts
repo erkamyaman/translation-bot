@@ -2,7 +2,7 @@ import type { Probot, ProbotOctokit } from 'probot';
 import cron from 'node-cron';
 import { splitSections } from './changes.js';
 import { buildIssueBody } from './issue-body.js';
-import { labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
+import { labelsFor, nothingNewComment, nothingNewIssueBody, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
 import { loadConfig } from './repo-config.js';
 import { collectChanges } from './upstream.js';
 
@@ -28,12 +28,23 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
     : { docs: [], docsInfra: [] };
 
   if (!changes || (!sections.docs.length && !sections.docsInfra.length)) {
-    if (!existing) return 'no tracked files changed';
+    const since = lastRun ?? sinceIso(now, config.windowHours);
+    if (!existing) {
+      const created = await octokit.rest.issues.create({
+        owner,
+        repo,
+        title: config.title,
+        body: withLastRun(nothingNewIssueBody(since, config.windowHours, now.toISOString()), now),
+        labels: [config.label],
+        assignees: config.assignees.length ? config.assignees : [owner],
+      });
+      return `nothing new, opened #${created.data.number}`;
+    }
     await octokit.rest.issues.createComment({
       owner,
       repo,
       issue_number: existing.number,
-      body: nothingNewComment(lastRun ?? sinceIso(now, config.windowHours), lastRun !== null, config.windowHours, now.toISOString()),
+      body: nothingNewComment(since, lastRun !== null, config.windowHours, now.toISOString()),
     });
     await octokit.rest.issues.update({
       owner,
