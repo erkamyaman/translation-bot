@@ -3,8 +3,8 @@ services:
     name: translation-bot
     runtime: node
     plan: free
-    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile --prod=false && pnpm build
-    startCommand: pnpm start
+    buildCommand: npx --yes pnpm@10 install --frozen-lockfile --prod=false && npx --yes pnpm@10 run build
+    startCommand: node_modules/.bin/probot run ./dist/index.js
     healthCheckPath: /ping
     envVars:
       - key: NODE_VERSION
