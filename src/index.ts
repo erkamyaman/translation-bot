@@ -1,10 +1,12 @@
-import type { Probot } from 'probot';
+import type { ApplicationFunctionOptions, Probot } from 'probot';
 import { parseCommand } from './commands.js';
 import { scheduleDaily } from './daily.js';
+import { dailyHandler } from './daily-route.js';
 import { loadConfig } from './repo-config.js';
 
-export default (app: Probot) => {
+export default (app: Probot, { addHandler }: ApplicationFunctionOptions) => {
   scheduleDaily(app);
+  addHandler(dailyHandler(app));
 
   app.on('issue_comment.created', async (context) => {
     const { comment, issue, sender } = context.payload;

@@ -1,0 +1,17 @@
+name: Daily report
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ask the bot for today's report
+        env:
+          BOT_URL: ${{ secrets.BOT_URL }}
+          DAILY_TOKEN: ${{ secrets.DAILY_TOKEN }}
+        run: |
+          curl -sS --fail-with-body --max-time 240 --retry 3 --retry-delay 30 --retry-all-errors \
+            -X POST -H "Authorization: Bearer $DAILY_TOKEN" "$BOT_URL/translation-bot/daily"

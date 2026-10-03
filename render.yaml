@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: translation-bot
+    runtime: node
+    plan: free
+    buildCommand: npm install -g pnpm && pnpm install --frozen-lockfile --prod=false && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /ping
+    envVars:
+      - key: NODE_VERSION
+        value: 24
+      - key: DAILY_CRON
+        value: 'off'
+      - key: APP_ID
+        sync: false
+      - key: PRIVATE_KEY
+        sync: false
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: DAILY_TOKEN
+        sync: false

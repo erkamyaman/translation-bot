@@ -52,7 +52,13 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
   return `opened #${created.data.number}`;
 }
 
-export async function runDaily(app: Probot, now = new Date()): Promise<void> {
+export interface DailyOutcome {
+  results: string[];
+  failures: number;
+}
+
+export async function runDaily(app: Probot, now = new Date()): Promise<DailyOutcome> {
+  const outcome: DailyOutcome = { results: [], failures: 0 };
   const appOctokit = await app.auth();
   const installations = await appOctokit.paginate(appOctokit.rest.apps.listInstallations, { per_page: 100 });
   for (const installation of installations) {
@@ -61,16 +67,25 @@ export async function runDaily(app: Probot, now = new Date()): Promise<void> {
     for (const repo of repos) {
       const name = `${repo.owner.login}/${repo.name}`;
       try {
-        app.log.info(`${name}: ${await reportForRepo(octokit, repo.owner.login, repo.name, now)}`);
+        const result = `${name}: ${await reportForRepo(octokit, repo.owner.login, repo.name, now)}`;
+        app.log.info(result);
+        outcome.results.push(result);
       } catch (error) {
         app.log.error({ error }, `${name}: failed`);
+        outcome.results.push(`${name}: failed`);
+        outcome.failures += 1;
       }
     }
   }
+  return outcome;
 }
 
 export function scheduleDaily(app: Probot): void {
   const expression = process.env['DAILY_CRON'] || '0 6 * * *';
+  if (expression === 'off') {
+    app.log.info('in-app daily timer is off');
+    return;
+  }
   cron.schedule(expression, () => void runDaily(app), { timezone: 'UTC' });
   app.log.info(`daily report scheduled: ${expression} UTC`);
   if (process.env['RUN_ON_START']) void runDaily(app);
