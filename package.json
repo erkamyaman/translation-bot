@@ -2,6 +2,7 @@
   "name": "translation-bot",
   "version": "0.0.1",
   "private": true,
+  "homepage": "https://github.com/erkamyaman/translation-bot",
   "license": "MIT",
   "type": "module",
   "scripts": {
