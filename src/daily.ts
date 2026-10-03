@@ -32,7 +32,7 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
     owner,
     repo,
     labels: config.label,
-    state: 'all',
+    state: 'open',
     per_page: 100,
   });
   const existing = issues.find((issue) => !issue.pull_request && issue.title === title);
