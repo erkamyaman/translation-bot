@@ -7,7 +7,6 @@ GitHub App for translation forks. Once a day it reads the last 24 hours of commi
 - Opens one issue per day, titled `Upstream changes to translate (YYYY-MM-DD)`. Re-runs on the same day update that issue.
 - Splits the checklist into **Docs** (pages to translate) and **Docs infra** (app, shared-docs, pipeline), and labels the issue `translation-sync`, `docs` and `docs-infra` as they apply.
 - Assigns the issue to the repo owner, or to the `assignees` you configure.
-- Comment `/claim` on an issue to assign yourself, or `/unclaim` to give it back.
 
 It only touches repos that contain `.github/translation-bot.yml`.
 

@@ -6,6 +6,7 @@ export interface Change {
   title: string;
   prNumber: number | null;
   files: ChangedFile[];
+  date: string;
 }
 
 export interface Sections {
@@ -15,7 +16,7 @@ export interface Sections {
 
 const PR_SUFFIX = /\s\(#(\d+)\)\s*$/;
 
-export function toChange(sha: string, message: string, files: ChangedFile[]): Change {
+export function toChange(sha: string, message: string, files: ChangedFile[], date = ''): Change {
   const firstLine = message.split('\n')[0]?.trim() ?? '';
   const match = PR_SUFFIX.exec(firstLine);
   return {
@@ -23,6 +24,7 @@ export function toChange(sha: string, message: string, files: ChangedFile[]): Ch
     title: match ? firstLine.replace(PR_SUFFIX, '') : firstLine,
     prNumber: match?.[1] ? Number(match[1]) : null,
     files,
+    date,
   };
 }
 

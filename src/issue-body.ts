@@ -1,3 +1,4 @@
+import { checkedAtLine, turkeyDate, turkeyTime } from './issue-meta.js';
 import { changeUrl, diffUrl, neutralize, type Change, type Sections } from './changes.js';
 
 export const MAX_FILES_PER_CHANGE = 8;
@@ -10,10 +11,13 @@ export interface ReportInput {
   since: string;
   windowHours: number;
   sections: Sections;
+  kind?: 'issue' | 'update';
+  checkedAt?: string;
 }
 
 function item(upstream: string, change: Change): string {
-  const lines = [`- [ ] [${neutralize(change.title)}](${changeUrl(upstream, change)}) \`${change.sha.slice(0, 7)}\``];
+  const when = change.date ? ` · ${turkeyDate(change.date)}` : '';
+  const lines = [`- [ ] [${neutralize(change.title)}](${changeUrl(upstream, change)}) \`${change.sha.slice(0, 7)}\`${when}`];
   for (const file of change.files.slice(0, MAX_FILES_PER_CHANGE)) {
     lines.push(`  - \`${file.filename}\` ([diff](${diffUrl(upstream, change.sha, file.filename)}))`);
   }
@@ -25,9 +29,13 @@ function item(upstream: string, change: Change): string {
 export function buildIssueBody(input: ReportInput): string {
   const { upstreamRepo, sections } = input;
   const compare = `https://redirect.github.com/${upstreamRepo}/compare/${input.base}...${input.head}`;
-  const footer = ['', '---', 'Comment `/claim` to take this issue or `/unclaim` to give it back.'].join('\n');
+  const update = input.kind === 'update';
+  const checked = input.checkedAt ? [checkedAtLine(input.checkedAt)] : [];
+  const footer = ['', '---', ...checked].join('\n');
   const headerCount = new Set([...sections.docs, ...sections.docsInfra].map((change) => change.sha)).size;
-  const header = `${headerCount} upstream changes touched tracked files in the last ${input.windowHours} hours (since ${input.since}). [Full diff](${compare}).`;
+  const header = update
+    ? `## New changes from Angular repo\n\n${headerCount} new upstream changes since ${turkeyTime(input.since)}. [Full diff](${compare}).`
+    : `${headerCount} upstream changes touched tracked files in the last ${input.windowHours} hours (since ${input.since}). [Full diff](${compare}).`;
 
   const blocks: string[] = [];
   let length = header.length + footer.length;

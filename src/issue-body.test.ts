@@ -37,9 +37,8 @@ describe('buildIssueBody', () => {
     expect(body).not.toMatch(/https:\/\/github\.com\/[^/]+\/[^/]+\/(pull|issues|commit|compare)/);
   });
 
-  it('links the full diff and mentions the commands', () => {
+  it('links the full diff', () => {
     expect(body).toContain(`https://redirect.github.com/angular/angular/compare/${base}...${head}`);
-    expect(body).toContain('`/claim`');
   });
 
   it('caps the files shown per change', () => {
@@ -60,5 +59,25 @@ describe('buildIssueBody', () => {
     const huge = buildIssueBody(input(lots));
     expect(huge.length).toBeLessThanOrEqual(MAX_BODY_LENGTH + 500);
     expect(huge).toMatch(/\d+ more changes did not fit/);
+  });
+});
+
+describe('update comment', () => {
+  const comment = buildIssueBody({
+    ...input([
+      toChange('1'.repeat(40), 'docs: guide update (#10)', [{ filename: 'adev/src/content/guide/a.md', status: 'modified' }], '2026-10-03T17:35:00Z'),
+    ]),
+    kind: 'update',
+    checkedAt: '2026-10-03T21:24:00.000Z',
+  });
+
+  it('says what is new', () => {
+    expect(comment).toContain('## New changes from Angular repo');
+    expect(comment).toContain('new upstream changes since 3 Oct 2026, 09:00 Turkey time');
+  });
+
+  it('dates each change and the check', () => {
+    expect(comment).toContain('· 3 Oct 2026, 20:35');
+    expect(comment).toContain('Checked at 4 Oct 2026, 00:24 Turkey time.');
   });
 });

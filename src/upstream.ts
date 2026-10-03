@@ -15,9 +15,14 @@ export interface UpstreamChanges {
 
 const CONCURRENCY = 5;
 
-export async function collectChanges(octokit: Octokit, config: BotConfig, now: Date): Promise<UpstreamChanges | null> {
+export async function collectChanges(
+  octokit: Octokit,
+  config: BotConfig,
+  now: Date,
+  sinceOverride?: string | null,
+): Promise<UpstreamChanges | null> {
   const [owner, repo] = config.upstream.split('/') as [string, string];
-  const since = sinceIso(now, config.windowHours);
+  const since = sinceOverride ?? sinceIso(now, config.windowHours);
 
   const commits = await octokit.paginate(octokit.rest.repos.listCommits, {
     owner,
@@ -38,7 +43,7 @@ export async function collectChanges(octokit: Octokit, config: BotConfig, now: D
     );
     for (const { data } of details) {
       const files = ((data.files ?? []) as ChangedFile[]).filter((file) => underAny(file.filename, config.paths));
-      if (files.length) changes.push(toChange(data.sha, data.commit.message, files));
+      if (files.length) changes.push(toChange(data.sha, data.commit.message, files, data.commit.committer?.date ?? data.commit.author?.date ?? ''));
     }
   }
 

@@ -1,5 +1,3 @@
-default_events:
-  - issue_comment
 default_permissions:
   issues: write
   contents: read

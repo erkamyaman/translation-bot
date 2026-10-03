@@ -2,7 +2,7 @@ import type { Probot, ProbotOctokit } from 'probot';
 import cron from 'node-cron';
 import { splitSections } from './changes.js';
 import { buildIssueBody } from './issue-body.js';
-import { issueTitle, labelsFor } from './issue-meta.js';
+import { issueTitle, labelsFor, nothingNewComment, readLastRun, sinceIso, withLastRun } from './issue-meta.js';
 import { loadConfig } from './repo-config.js';
 import { collectChanges } from './upstream.js';
 
@@ -12,22 +12,6 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
   const config = await loadConfig(octokit, owner, repo);
   if (!config) return 'skipped, no config file';
 
-  const changes = await collectChanges(octokit, config, now);
-  if (!changes) return 'no upstream commits in the window';
-
-  const sections = splitSections(changes.changes, config.contentPaths);
-  if (!sections.docs.length && !sections.docsInfra.length) return 'no tracked files changed';
-
-  const title = issueTitle(config.titlePrefix, now);
-  const body = buildIssueBody({
-    upstreamRepo: config.upstream,
-    base: changes.base,
-    head: changes.head,
-    since: changes.since,
-    windowHours: config.windowHours,
-    sections,
-  });
-
   const issues = await octokit.paginate(octokit.rest.issues.listForRepo, {
     owner,
     repo,
@@ -35,17 +19,62 @@ export async function reportForRepo(octokit: Octokit, owner: string, repo: strin
     state: 'open',
     per_page: 100,
   });
-  const existing = issues.find((issue) => !issue.pull_request && issue.title === title);
+  const existing = issues.find((issue) => !issue.pull_request);
+
+  const lastRun = readLastRun(existing?.body);
+  const changes = await collectChanges(octokit, config, now, lastRun);
+  const sections = changes
+    ? splitSections(changes.changes, config.contentPaths)
+    : { docs: [], docsInfra: [] };
+
+  if (!changes || (!sections.docs.length && !sections.docsInfra.length)) {
+    if (!existing) return 'no tracked files changed';
+    await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: existing.number,
+      body: nothingNewComment(lastRun ?? sinceIso(now, config.windowHours), lastRun !== null, config.windowHours, now.toISOString()),
+    });
+    await octokit.rest.issues.update({
+      owner,
+      repo,
+      issue_number: existing.number,
+      body: withLastRun(existing.body, now),
+    });
+    return `nothing new, commented on #${existing.number}`;
+  }
+
+  const report = {
+    upstreamRepo: config.upstream,
+    base: changes.base,
+    head: changes.head,
+    since: changes.since,
+    windowHours: config.windowHours,
+    sections,
+    checkedAt: now.toISOString(),
+  };
+
   if (existing) {
-    await octokit.rest.issues.update({ owner, repo, issue_number: existing.number, body });
-    return `updated #${existing.number}`;
+    await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: existing.number,
+      body: buildIssueBody({ ...report, kind: 'update' }),
+    });
+    await octokit.rest.issues.update({
+      owner,
+      repo,
+      issue_number: existing.number,
+      body: withLastRun(existing.body, now),
+    });
+    return `commented on #${existing.number}`;
   }
 
   const created = await octokit.rest.issues.create({
     owner,
     repo,
-    title,
-    body,
+    title: issueTitle(config.titlePrefix, now),
+    body: withLastRun(buildIssueBody(report), now),
     labels: labelsFor(sections.docs.length > 0, sections.docsInfra.length > 0, config.label),
     assignees: config.assignees.length ? config.assignees : [owner],
   });
